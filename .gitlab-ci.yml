@@ -49,14 +49,14 @@ build-scan-push-tag:
     #    - sast-demo/**/*
   before_script:
     - apk update && apk add curl
-    - curl --silent -o wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-amd64 && chmod +x wizcli
-    - ./wizcli auth
+    - curl --silent -o wizcli https://downloads.wiz.io/v1/wizcli/latest/wizcli-linux-amd64 && chmod +x wizcli
   script:
     - docker build $DOCKERFILE_PATH --tag $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-    - ./wizcli docker scan --image $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG --dockerfile "$DOCKERFILE_PATH/Dockerfile"
+    - ./wizcli scan container-image $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG --dockerfile "$DOCKERFILE_PATH/Dockerfile"
     - docker login -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASSWORD $IMAGE_REGISTRY
     - docker push $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-    - ./wizcli docker tag -S -i $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+    - export IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG | cut -d'@' -f2)
+    - ./wizcli tag $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG --digest $IMAGE_DIGEST
 
 sast:
   stage: test

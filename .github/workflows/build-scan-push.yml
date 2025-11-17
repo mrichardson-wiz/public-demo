@@ -65,21 +65,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Integrate CI data with Wiz
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
         run: |
           docker pull ${{ matrix.image }}
           if [[ ! -z "${{ vars.WIZ_ENV }}" && "${{ vars.WIZ_ENV }}" != "app" ]]; then export WIZ_ENV=${{ vars.WIZ_ENV }}; fi
-          curl -Lo wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-amd64
+          curl -Lo wizcli https://downloads.wiz.io/v1/wizcli/latest/wizcli-linux-amd64
           chmod +x wizcli
-          ./wizcli auth --id "${{ secrets.WIZ_CLIENT_ID }}" --secret "${{ secrets.WIZ_CLIENT_SECRET }}"
-          ./wizcli docker scan --image ${{ matrix.image }} --dockerfile "${{ matrix.dockerfile }}/Dockerfile"
-          ./wizcli docker tag --image ${{ matrix.image }}
+          ./wizcli scan container-image ${{ matrix.image }} --dockerfile "${{ matrix.dockerfile }}/Dockerfile"
+          ./wizcli tag ${{ matrix.image }} --digest ${{ steps.build-and-push.outputs.digest }}
         continue-on-error: true
 
       - name: Integrate CI data with Wiz CSA Test Environment
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.CSA_TEST_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.CSA_TEST_CLIENT_SECRET }}
         run: |
           export WIZ_ENV=test
-          ./wizcli auth --logout
-          ./wizcli auth --id "${{ secrets.CSA_TEST_CLIENT_ID }}" --secret "${{ secrets.CSA_TEST_CLIENT_SECRET }}"
-          ./wizcli docker scan --image ${{ matrix.image }} --dockerfile "${{ matrix.dockerfile }}/Dockerfile" -p no-fail-vuln-policy
-          ./wizcli docker tag --image ${{ matrix.image }}
+          ./wizcli scan container-image ${{ matrix.image }} --dockerfile "${{ matrix.dockerfile }}/Dockerfile" -p no-fail-vuln-policy
+          ./wizcli tag ${{ matrix.image }} --digest ${{ steps.build-and-push.outputs.digest }}
         continue-on-error: true

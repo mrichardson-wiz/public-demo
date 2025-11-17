@@ -31,15 +31,12 @@ jobs:
           if [[ ! -z "${{ vars.WIZ_ENV }}" && "${{ vars.WIZ_ENV }}" != "app" ]]; then echo "WIZ_ENV=${{ vars.WIZ_ENV }}" >> $GITHUB_ENV; fi
 
       - name: Download Wiz CLI
-        run: curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli && chmod +x wizcli
-
-      - name: Authenticate to Wiz
-        run: ./wizcli auth
+        run: curl -o wizcli https://downloads.wiz.io/v1/wizcli/latest/wizcli-linux-amd64 && chmod +x wizcli
 
       - name: Run Wiz CLI Directory Scan
         run: |-
-          ./wizcli dir scan --path "." \
-          --tag github_action_run_id=${{ github.run_id }} -o wiz-output.json,sarif,true \
+          ./wizcli scan dir ./ \
+          --tag github_action_run_id=${{ github.run_id }} --sarif-output-file wiz-output.json \
           --sbom-format spdx-json --sbom-output-file sbom.json
 
       - name: Upload SARIF file
